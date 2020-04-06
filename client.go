@@ -1,12 +1,13 @@
 package main
 
 import (
-	"bytes"
+	"encoding/json"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/mitchellh/mapstructure"
 )
 
 const (
@@ -24,8 +25,9 @@ const (
 )
 
 var (
-	newline = []byte{'\n'}
-	space   = []byte{' '}
+	newline  = []byte{'\n'}
+	space    = []byte{' '}
+	playerID = 0
 )
 
 var upgrader = websocket.Upgrader{
@@ -36,6 +38,9 @@ var upgrader = websocket.Upgrader{
 // Client is a middleman between the websocket connection and the hub.
 type Client struct {
 	hub *Hub
+
+	// The player data
+	player *Player
 
 	// The websocket connection.
 	conn *websocket.Conn
@@ -58,15 +63,30 @@ func (c *Client) readPump() {
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
 	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 	for {
-		_, message, err := c.conn.ReadMessage()
+		_, data, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.Printf("error: %v", err)
 			}
 			break
 		}
-		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
-		c.hub.broadcast <- message
+		var event Event
+		json.Unmarshal(data, &event)
+	}
+}
+
+// processEvent executes instructions based on the event name
+func (c *Client) processEvent(event Event) {
+	if event.Name == "movePlayer" {
+		var data struct {
+			Position Vector3 `json:"position"`
+		}
+		err := mapstructure.Decode(event.Data, data)
+		if err != nil {
+			log.Printf("error: %v", err)
+			return
+		}
+		c.player.Position = data.Position
 	}
 }
 
@@ -124,7 +144,9 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
+	playerID++
+	player := &Player{ID: playerID, Position: Vector3{X: 0.0, Y: 0.0, Z: 0.0}}
+	client := &Client{hub: hub, player: player, conn: conn, send: make(chan []byte, 256)}
 	client.hub.register <- client
 
 	// Allow collection of memory referenced by the caller by doing all work in
