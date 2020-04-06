@@ -72,6 +72,7 @@ func (c *Client) readPump() {
 		}
 		var event Event
 		json.Unmarshal(data, &event)
+		c.processEvent(event)
 	}
 }
 
