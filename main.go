@@ -1,7 +1,26 @@
 package main
 
-import "fmt"
+import (
+	"flag"
+	"fmt"
+	"log"
+	"net/http"
+)
+
+var addr = flag.String("addr", ":8080", "http service address")
 
 func main() {
-	fmt.Println("hello world")
+	flag.Parse()
+	hub := newHub()
+	go hub.run()
+
+	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		serveWs(hub, w, r)
+	})
+
+	fmt.Println("Server running at: http://localhost" + *addr)
+	err := http.ListenAndServe(*addr, nil)
+	if err != nil {
+		log.Fatal("ListenAndServe: ", err)
+	}
 }
