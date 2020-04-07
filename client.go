@@ -82,7 +82,7 @@ func (c *Client) processEvent(event Event) {
 		var data struct {
 			Position Vector3 `json:"position"`
 		}
-		err := mapstructure.Decode(event.Data, data)
+		err := mapstructure.Decode(event.Data, &data)
 		if err != nil {
 			log.Printf("error: %v", err)
 			return
