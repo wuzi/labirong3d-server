@@ -88,6 +88,13 @@ func (c *Client) processEvent(event Event) {
 			return
 		}
 		c.player.Position = data.Position
+	} else if event.Name == "getClientId" {
+		var data struct {
+			ID int `json:"id"`
+		}
+		data.ID = playerID
+		e := Event{"getClientId", data}
+		c.hub.broadcast <- e
 	}
 }
 
