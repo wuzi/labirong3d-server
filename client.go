@@ -81,6 +81,7 @@ func (c *Client) processEvent(event Event) {
 	if event.Name == "movePlayer" {
 		var data struct {
 			Position Vector3 `json:"position"`
+			Rotation Vector3 `json:"rotation"`
 		}
 		err := mapstructure.Decode(event.Data, &data)
 		if err != nil {
@@ -88,6 +89,7 @@ func (c *Client) processEvent(event Event) {
 			return
 		}
 		c.player.Position = data.Position
+		c.player.Rotation = data.Rotation
 	} else if event.Name == "getClientId" {
 		var data struct {
 			ID int `json:"id"`
@@ -153,7 +155,7 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	playerID++
-	player := &Player{ID: playerID, Position: Vector3{X: 0.0, Y: 0.0, Z: 0.0}}
+	player := &Player{ID: playerID, Position: Vector3{}, Rotation: Vector3{}}
 	client := &Client{hub: hub, player: player, conn: conn, send: make(chan []byte, 256)}
 	client.hub.register <- client
 

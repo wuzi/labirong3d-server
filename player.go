@@ -4,4 +4,5 @@ package main
 type Player struct {
 	ID       int     `json:"id"`
 	Position Vector3 `json:"position"`
+	Rotation Vector3 `json:"rotation"`
 }
