@@ -100,7 +100,7 @@ func (c *Client) processEvent(event Event) {
 		}
 		c.player.Position = data.Position
 		c.player.Rotation = data.Rotation
-	} else if event.Name == "getClientId" {
+	} else if event.Name == "getServerInfo" {
 		var data struct {
 			ID      int       `json:"id"`
 			Players []*Player `json:"players"`
@@ -117,7 +117,7 @@ func (c *Client) processEvent(event Event) {
 		data.ID = playerID
 		data.Players = players
 
-		e := Event{"getClientId", data}
+		e := Event{"getServerInfo", data}
 		c.hub.broadcast <- e
 	}
 }
