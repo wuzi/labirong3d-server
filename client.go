@@ -56,6 +56,16 @@ type Client struct {
 // reads from this goroutine.
 func (c *Client) readPump() {
 	defer func() {
+		// Tell clients that a new player joined.
+		var data struct {
+			ID int `json:"id"`
+		}
+
+		data.ID = c.player.ID
+		e := Event{"playerQuit", data}
+		c.hub.broadcast <- e
+
+		// Close connection.
 		c.hub.unregister <- c
 		c.conn.Close()
 	}()
@@ -158,6 +168,15 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	player := &Player{ID: playerID, Position: Vector3{}, Rotation: Vector3{}}
 	client := &Client{hub: hub, player: player, conn: conn, send: make(chan []byte, 256)}
 	client.hub.register <- client
+
+	// Tell clients that a new player joined.
+	var data struct {
+		ID int `json:"id"`
+	}
+
+	data.ID = client.player.ID
+	e := Event{"playerJoin", data}
+	client.hub.broadcast <- e
 
 	// Allow collection of memory referenced by the caller by doing all work in
 	// new goroutines.
