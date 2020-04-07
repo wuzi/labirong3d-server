@@ -102,9 +102,21 @@ func (c *Client) processEvent(event Event) {
 		c.player.Rotation = data.Rotation
 	} else if event.Name == "getClientId" {
 		var data struct {
-			ID int `json:"id"`
+			ID      int       `json:"id"`
+			Players []*Player `json:"players"`
 		}
+
+		var players []*Player
+		for client, active := range c.hub.clients {
+			if active == false {
+				continue
+			}
+			players = append(players, client.player)
+		}
+
 		data.ID = playerID
+		data.Players = players
+
 		e := Event{"getClientId", data}
 		c.hub.broadcast <- e
 	}
