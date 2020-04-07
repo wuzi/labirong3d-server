@@ -31,7 +31,7 @@ func newHub() *Hub {
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		clients:    make(map[*Client]bool),
-		ticker:     time.NewTicker(1 * time.Second),
+		ticker:     time.NewTicker(10 * time.Millisecond),
 	}
 }
 
