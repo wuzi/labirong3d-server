@@ -187,17 +187,16 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	}
 
 	playerJoinCount++
+	player := &Player{ID: playerJoinCount, Position: Vector3{}, Rotation: Vector3{}}
 
 	// Tell clients that a new player joined.
 	data := struct {
-		ID int `json:"id"`
-	}{ID: playerJoinCount}
-
+		Player *Player `json:"player"`
+	}{player}
 	e := Event{"playerJoin", data}
 	hub.broadcast <- e
 
 	// Create client for the new connection
-	player := &Player{ID: playerJoinCount, Position: Vector3{}, Rotation: Vector3{}}
 	client := &Client{hub: hub, player: player, conn: conn, send: make(chan []byte, 256)}
 	client.hub.register <- client
 
