@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"time"
 )
 
 // Hub maintains the set of active clients and broadcasts messages to the
@@ -19,9 +18,6 @@ type Hub struct {
 
 	// Unregister requests from clients.
 	unregister chan *Client
-
-	// Ticker to update clients about everything
-	ticker *time.Ticker
 }
 
 // newHub creates a new Hub.
@@ -31,28 +27,11 @@ func newHub() *Hub {
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		clients:    make(map[*Client]bool),
-		ticker:     time.NewTicker(10 * time.Millisecond),
-	}
-}
-
-// tick starts the hub ticker.
-func (h *Hub) tick() {
-	for range h.ticker.C {
-		var players []*Player
-		for client, active := range h.clients {
-			if active == false {
-				continue
-			}
-			players = append(players, client.player)
-		}
-		e := Event{"update", players}
-		h.broadcast <- e
 	}
 }
 
 // Run serve the hub to listen for new messages.
 func (h *Hub) run() {
-	go h.tick()
 	for {
 		select {
 		case client := <-h.register:

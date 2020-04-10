@@ -25,9 +25,9 @@ const (
 )
 
 var (
-	newline  = []byte{'\n'}
-	space    = []byte{' '}
-	playerID = 0
+	newline         = []byte{'\n'}
+	space           = []byte{' '}
+	playerJoinCount = 0
 )
 
 var upgrader = websocket.Upgrader{
@@ -57,11 +57,10 @@ type Client struct {
 func (c *Client) readPump() {
 	defer func() {
 		// Tell clients that a new player joined.
-		var data struct {
+		data := struct {
 			ID int `json:"id"`
-		}
+		}{ID: c.player.ID}
 
-		data.ID = c.player.ID
 		e := Event{"playerQuit", data}
 		c.hub.broadcast <- e
 
@@ -89,36 +88,46 @@ func (c *Client) readPump() {
 // processEvent executes instructions based on the event name
 func (c *Client) processEvent(event Event) {
 	if event.Name == "movePlayer" {
-		var data struct {
+		// Update player's position
+		var localPlayer struct {
 			Position Vector3 `json:"position"`
 			Rotation Vector3 `json:"rotation"`
 		}
-		err := mapstructure.Decode(event.Data, &data)
+		err := mapstructure.Decode(event.Data, &localPlayer)
 		if err != nil {
 			log.Printf("error: %v", err)
 			return
 		}
-		c.player.Position = data.Position
-		c.player.Rotation = data.Rotation
-	} else if event.Name == "getServerInfo" {
-		var data struct {
-			ID      int       `json:"id"`
-			Players []*Player `json:"players"`
-		}
+		c.player.Position = localPlayer.Position
+		c.player.Rotation = localPlayer.Rotation
 
-		var players []*Player
+		// Broadcast the new position to all clients
+		data := struct {
+			Players []*Player `json:"players"`
+		}{[]*Player{c.player}}
+		e := Event{"update", data}
+		event, _ := json.Marshal(e)
 		for client, active := range c.hub.clients {
-			if active == false {
+			if active == false || client.player.ID == c.player.ID {
 				continue
 			}
-			players = append(players, client.player)
+			client.send <- event
+		}
+	} else if event.Name == "getConnectedPlayers" {
+		data := struct {
+			Players []*Player `json:"players"`
+		}{[]*Player{}}
+
+		for client, active := range c.hub.clients {
+			if active == false || client.player.ID == c.player.ID {
+				continue
+			}
+			data.Players = append(data.Players, client.player)
 		}
 
-		data.ID = playerID
-		data.Players = players
-
-		e := Event{"getServerInfo", data}
-		c.hub.broadcast <- e
+		e := Event{"getConnectedPlayers", data}
+		event, _ := json.Marshal(e)
+		c.send <- event
 	}
 }
 
@@ -176,19 +185,21 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	playerID++
-	player := &Player{ID: playerID, Position: Vector3{}, Rotation: Vector3{}}
-	client := &Client{hub: hub, player: player, conn: conn, send: make(chan []byte, 256)}
-	client.hub.register <- client
+
+	playerJoinCount++
 
 	// Tell clients that a new player joined.
-	var data struct {
+	data := struct {
 		ID int `json:"id"`
-	}
+	}{ID: playerJoinCount}
 
-	data.ID = client.player.ID
 	e := Event{"playerJoin", data}
-	client.hub.broadcast <- e
+	hub.broadcast <- e
+
+	// Create client for the new connection
+	player := &Player{ID: playerJoinCount, Position: Vector3{}, Rotation: Vector3{}}
+	client := &Client{hub: hub, player: player, conn: conn, send: make(chan []byte, 256)}
+	client.hub.register <- client
 
 	// Allow collection of memory referenced by the caller by doing all work in
 	// new goroutines.
