@@ -17,7 +17,7 @@ func main() {
 
 	_, isPortSet := os.LookupEnv("PORT")
 	if isPortSet {
-		*addr = os.Getenv("PORT")
+		*addr = ":" + os.Getenv("PORT")
 	}
 
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
