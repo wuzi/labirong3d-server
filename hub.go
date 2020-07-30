@@ -7,6 +7,9 @@ import (
 // Hub maintains the set of active clients and broadcasts messages to the
 // clients.
 type Hub struct {
+	// Auto generated grid.
+	grid [][]int
+
 	// Registered clients.
 	clients map[*Client]bool
 
@@ -23,6 +26,7 @@ type Hub struct {
 // newHub creates a new Hub.
 func newHub() *Hub {
 	return &Hub{
+		grid:       makeGrid(16, 16),
 		broadcast:  make(chan Event),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),

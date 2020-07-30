@@ -113,10 +113,11 @@ func (c *Client) processEvent(event Event) {
 			}
 			client.send <- event
 		}
-	} else if event.Name == "getConnectedPlayers" {
+	} else if event.Name == "syncWorld" {
 		data := struct {
 			Players []*Player `json:"players"`
-		}{[]*Player{}}
+			Grid    [][]int   `json:"grid"`
+		}{[]*Player{}, c.hub.grid}
 
 		for client, active := range c.hub.clients {
 			if active == false || client.player.ID == c.player.ID {
@@ -125,7 +126,7 @@ func (c *Client) processEvent(event Event) {
 			data.Players = append(data.Players, client.player)
 		}
 
-		e := Event{"getConnectedPlayers", data}
+		e := Event{"syncWorld", data}
 		event, _ := json.Marshal(e)
 		c.send <- event
 	}
