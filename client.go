@@ -58,8 +58,8 @@ func (c *Client) readPump() {
 	defer func() {
 		// Tell clients that a new player joined.
 		data := struct {
-			ID int `json:"id"`
-		}{ID: c.player.ID}
+			Player *Player `json:"player"`
+		}{Player: c.player}
 
 		e := Event{"playerQuit", data}
 		c.hub.broadcast <- e
