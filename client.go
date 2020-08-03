@@ -90,8 +90,9 @@ func (c *Client) processEvent(event Event) {
 	if event.Name == "movePlayer" {
 		// Update player's position
 		var localPlayer struct {
-			Position Vector3 `json:"position"`
-			Rotation Vector3 `json:"rotation"`
+			Position         Vector3 `json:"position"`
+			Rotation         Vector3 `json:"rotation"`
+			CurrentAnimation string  `json:"currentAnimation"`
 		}
 		err := mapstructure.Decode(event.Data, &localPlayer)
 		if err != nil {
@@ -100,6 +101,7 @@ func (c *Client) processEvent(event Event) {
 		}
 		c.player.Position = localPlayer.Position
 		c.player.Rotation = localPlayer.Rotation
+		c.player.CurrentAnimation = localPlayer.CurrentAnimation
 
 		// Broadcast the new position to all clients
 		data := struct {
@@ -188,7 +190,7 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	}
 
 	playerJoinCount++
-	player := &Player{ID: playerJoinCount, Position: Vector3{}, Rotation: Vector3{}}
+	player := &Player{ID: playerJoinCount, Position: Vector3{}, Rotation: Vector3{}, CurrentAnimation: "Idle"}
 
 	// Tell clients that a new player joined.
 	data := struct {
