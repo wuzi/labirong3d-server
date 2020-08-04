@@ -131,6 +131,33 @@ func (c *Client) processEvent(event Event) {
 		e := Event{"syncWorld", data}
 		event, _ := json.Marshal(e)
 		c.send <- event
+	} else if event.Name == "chatMessage" {
+		// Receive message
+		var incomingData struct {
+			Message string `json:"message"`
+		}
+
+		err := mapstructure.Decode(event.Data, &incomingData)
+		if err != nil {
+			log.Printf("error: %v", err)
+			return
+		}
+
+		// Broadcast message to all clients
+		outgoingData := struct {
+			Player  *Player `json:"player"`
+			Message string  `json:"message"`
+		}{c.player, incomingData.Message}
+
+		e := Event{"chatMessage", outgoingData}
+		event, _ := json.Marshal(e)
+
+		for client, active := range c.hub.clients {
+			if active == false {
+				continue
+			}
+			client.send <- event
+		}
 	}
 }
 
