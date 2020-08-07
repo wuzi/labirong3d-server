@@ -6,7 +6,7 @@ This is a remake of the multiplayer [labirong](https://github.com/Wuzi/labirong)
 
 Run the following commands from within the repository's root folder to start the application:
 
-1. `go run *.go`
+1. `go run cmd/server/main.go`
 
 ## Client
 Check out the client-side code [here](https://github.com/Wuzi/labirong3d-client).
