@@ -1,4 +1,4 @@
-package main
+package util
 
 // Vector3 is a vector with 3 coordinates
 type Vector3 struct {

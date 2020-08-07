@@ -1,4 +1,4 @@
-package main
+package network
 
 import (
 	"encoding/json"
@@ -8,6 +8,9 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/mitchellh/mapstructure"
+
+	"labirong3d.com/server/entity"
+	"labirong3d.com/server/util"
 )
 
 const (
@@ -40,7 +43,7 @@ type Client struct {
 	hub *Hub
 
 	// The player data
-	player *Player
+	player *entity.Player
 
 	// The websocket connection.
 	conn *websocket.Conn
@@ -58,7 +61,7 @@ func (c *Client) readPump() {
 	defer func() {
 		// Tell clients that a new player joined.
 		data := struct {
-			Player *Player `json:"player"`
+			Player *entity.Player `json:"player"`
 		}{Player: c.player}
 
 		e := Event{"playerQuit", data}
@@ -90,9 +93,9 @@ func (c *Client) processEvent(event Event) {
 	if event.Name == "movePlayer" {
 		// Update player's position
 		var localPlayer struct {
-			Position         Vector3 `json:"position"`
-			Rotation         Vector3 `json:"rotation"`
-			CurrentAnimation string  `json:"currentAnimation"`
+			Position         util.Vector3 `json:"position"`
+			Rotation         util.Vector3 `json:"rotation"`
+			CurrentAnimation string       `json:"currentAnimation"`
 		}
 		err := mapstructure.Decode(event.Data, &localPlayer)
 		if err != nil {
@@ -105,8 +108,8 @@ func (c *Client) processEvent(event Event) {
 
 		// Broadcast the new position to all clients
 		data := struct {
-			Players []*Player `json:"players"`
-		}{[]*Player{c.player}}
+			Players []*entity.Player `json:"players"`
+		}{[]*entity.Player{c.player}}
 		e := Event{"update", data}
 		event, _ := json.Marshal(e)
 		for client, active := range c.hub.clients {
@@ -117,9 +120,9 @@ func (c *Client) processEvent(event Event) {
 		}
 	} else if event.Name == "syncWorld" {
 		data := struct {
-			Players []*Player `json:"players"`
-			Grid    [][]int   `json:"grid"`
-		}{[]*Player{}, c.hub.grid}
+			Players []*entity.Player `json:"players"`
+			Grid    [][]int          `json:"grid"`
+		}{[]*entity.Player{}, c.hub.grid}
 
 		for client, active := range c.hub.clients {
 			if active == false || client.player.ID == c.player.ID {
@@ -145,8 +148,8 @@ func (c *Client) processEvent(event Event) {
 
 		// Broadcast message to all clients
 		outgoingData := struct {
-			Player  *Player `json:"player"`
-			Message string  `json:"message"`
+			Player  *entity.Player `json:"player"`
+			Message string         `json:"message"`
 		}{c.player, incomingData.Message}
 
 		e := Event{"chatMessage", outgoingData}
@@ -207,8 +210,8 @@ func (c *Client) writePump() {
 	}
 }
 
-// serveWs handles websocket requests from the peer.
-func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
+// ServeWs handles websocket requests from the peer.
+func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -217,11 +220,11 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	}
 
 	playerJoinCount++
-	player := &Player{ID: playerJoinCount, Position: Vector3{}, Rotation: Vector3{}, CurrentAnimation: "Idle"}
+	player := &entity.Player{ID: playerJoinCount, Position: util.Vector3{}, Rotation: util.Vector3{}, CurrentAnimation: "Idle"}
 
 	// Tell clients that a new player joined.
 	data := struct {
-		Player *Player `json:"player"`
+		Player *entity.Player `json:"player"`
 	}{player}
 	e := Event{"playerJoin", data}
 	hub.broadcast <- e

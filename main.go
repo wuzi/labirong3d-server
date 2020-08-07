@@ -6,14 +6,16 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	"labirong3d.com/server/network"
 )
 
 var addr = flag.String("addr", ":8080", "http service address")
 
 func main() {
 	flag.Parse()
-	hub := newHub()
-	go hub.run()
+	hub := network.NewHub()
+	go hub.Run()
 
 	_, isPortSet := os.LookupEnv("PORT")
 	if isPortSet {
@@ -21,7 +23,7 @@ func main() {
 	}
 
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		serveWs(hub, w, r)
+		network.ServeWs(hub, w, r)
 	})
 
 	fmt.Println("Server running at: http://localhost" + *addr)

@@ -1,4 +1,4 @@
-package main
+package util
 
 import (
 	"math/rand"
@@ -9,8 +9,8 @@ var grid [][]int
 var attemptsLeft int
 var generating bool
 
-// makeGrid creates a new grid
-func makeGrid(sizeX, sizeY int) [][]int {
+// MakeGrid creates a new grid
+func MakeGrid(sizeX, sizeY int) [][]int {
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	attemptsLeft = 5

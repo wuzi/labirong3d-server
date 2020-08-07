@@ -1,7 +1,9 @@
-package main
+package network
 
 import (
 	"encoding/json"
+
+	"labirong3d.com/server/util"
 )
 
 // Hub maintains the set of active clients and broadcasts messages to the
@@ -23,10 +25,10 @@ type Hub struct {
 	unregister chan *Client
 }
 
-// newHub creates a new Hub.
-func newHub() *Hub {
+// NewHub creates a new Hub.
+func NewHub() *Hub {
 	return &Hub{
-		grid:       makeGrid(16, 16),
+		grid:       util.MakeGrid(16, 16),
 		broadcast:  make(chan Event),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
@@ -35,7 +37,7 @@ func newHub() *Hub {
 }
 
 // Run serve the hub to listen for new messages.
-func (h *Hub) run() {
+func (h *Hub) Run() {
 	for {
 		select {
 		case client := <-h.register:
