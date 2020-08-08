@@ -214,13 +214,21 @@ func (c *Client) writePump() {
 func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 	conn, err := upgrader.Upgrade(w, r, nil)
+	vars := r.URL.Query()
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
 	playerJoinCount++
-	player := &entity.Player{ID: playerJoinCount, Position: util.Vector3{}, Rotation: util.Vector3{}, CurrentAnimation: "Idle"}
+	player := &entity.Player{
+		ID:               playerJoinCount,
+		Name:             vars.Get("name"),
+		Color:            vars.Get("color"),
+		Position:         util.Vector3{},
+		Rotation:         util.Vector3{},
+		CurrentAnimation: "Idle",
+	}
 
 	// Tell clients that a new player joined.
 	data := struct {
