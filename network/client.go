@@ -161,6 +161,29 @@ func (c *Client) processEvent(event Event) {
 			}
 			client.send <- event
 		}
+	} else if event.Name == "onPlayerEscape" {
+		if c.hub.regenerating {
+			return
+		}
+
+		// Set timeout to regenerate map
+		c.hub.regenerating = true
+		time.AfterFunc(5*time.Second, func() {
+			c.hub.grid = util.MakeGrid(16, 16)
+			data := struct {
+				Grid [][]int `json:"grid"`
+			}{c.hub.grid}
+			e := Event{"onMapRegen", data}
+			c.hub.broadcast <- e
+			c.hub.regenerating = false
+		})
+
+		// Broadcast to all players
+		data := struct {
+			Player *entity.Player `json:"player"`
+		}{c.player}
+		e := Event{"onPlayerEscape", data}
+		c.hub.broadcast <- e
 	}
 }
 

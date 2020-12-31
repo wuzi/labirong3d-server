@@ -22,6 +22,9 @@ type Hub struct {
 
 	// Unregister requests from clients.
 	unregister chan *Client
+
+	// Is the map set to regenerate?
+	regenerating bool
 }
 
 // NewHub creates a new Hub.
